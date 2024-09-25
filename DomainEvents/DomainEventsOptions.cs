@@ -1,6 +1,6 @@
 ﻿namespace DomainEvents
 {
-    public class DomanEventsOptions
+    public class DomainEventsOptions
     {
         public bool FailOnNoSubscribers { get; set; }
     }
