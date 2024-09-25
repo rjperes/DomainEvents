@@ -1,6 +1,6 @@
 ﻿namespace DomainEvents
 {
-    public class Subscription : IDisposable
+    public sealed class Subscription : IDisposable
     {
         private readonly IEventsMediator _dispatcher;
         private readonly Guid _id = Guid.NewGuid();

@@ -5,7 +5,7 @@
         Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent;
     }
 
-    internal class SequentialEventsDispatcher : IEventsDispatcher
+    sealed class SequentialEventsDispatcher : IEventsDispatcher
     {
         public Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
         {
@@ -26,7 +26,7 @@
         }
     }
 
-    internal class TaskEventsDispatcher : IEventsDispatcher
+    sealed class TaskEventsDispatcher : IEventsDispatcher
     {
         public async Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
         {
@@ -49,7 +49,7 @@
         }
     }
 
-    internal class ParallelEventsDispatcher : IEventsDispatcher
+    sealed class ParallelEventsDispatcher : IEventsDispatcher
     {
         public Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
         {
@@ -70,7 +70,7 @@
         }
     }
 
-    internal class ThreadEventsDispatcher : IEventsDispatcher
+    sealed class ThreadEventsDispatcher : IEventsDispatcher
     {
         public Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
         {

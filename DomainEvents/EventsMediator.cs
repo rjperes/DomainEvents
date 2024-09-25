@@ -11,7 +11,7 @@ namespace DomainEvents
         void AddInterceptor(IDomainEventInterceptor interceptor);
     }
 
-    internal class EventsMediator : IEventsMediator
+    sealed class EventsMediator : IEventsMediator
     {
         private readonly IDictionary<Type, LinkedList<Subscription>> _subscriptions = new ConcurrentDictionary<Type, LinkedList<Subscription>>();
         private readonly ConcurrentBag<IDomainEventInterceptor> _interceptors = new ConcurrentBag<IDomainEventInterceptor>();

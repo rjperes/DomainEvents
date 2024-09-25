@@ -5,7 +5,7 @@
         Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent;
     }
 
-    public class EventsPublisher : IEventsPublisher
+    sealed class EventsPublisher : IEventsPublisher
     {
         private readonly IEventsMediator _dispatcher;
 
