@@ -13,6 +13,21 @@ namespace DomainEventsConsole
     {
     }
 
+    public class DummyInterceptor : DomainEventInterceptor
+    {
+        public override Task AfterPublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        {
+            Console.WriteLine($"AfterPublish {@event}");
+            return base.AfterPublish(@event, cancellationToken);
+        }
+
+        public override Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        {
+            Console.WriteLine($"BeforePublish {@event}");
+            return base.BeforePublish(@event, cancellationToken);
+        }
+    }
+
     internal class Program
     {
         static async Task Main()
@@ -24,10 +39,15 @@ namespace DomainEventsConsole
             });
             services.AddOptions();
 
+            services.AddSingleton<IDomainEventInterceptor, DummyInterceptor>();
+
             var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
             var subscriber = serviceProvider.GetRequiredService<IEventsSubscriber>();
             var publisher = serviceProvider.GetRequiredService<IEventsPublisher>();
+            //var mediator = serviceProvider.GetRequiredService<IEventsMediator>();
+
+            //mediator.AddInterceptor(new DummyInterceptor());
 
             //await publisher.Publish(new XptoEvent());
 

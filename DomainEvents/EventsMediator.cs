@@ -8,20 +8,29 @@ namespace DomainEvents
         Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent;
         Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent;
         bool Unsubscribe(Subscription subscription);
+        void AddInterceptor(IDomainEventInterceptor interceptor);
     }
 
     internal class EventsMediator : IEventsMediator
     {
         private readonly IDictionary<Type, LinkedList<Subscription>> _subscriptions = new ConcurrentDictionary<Type, LinkedList<Subscription>>();
+        private readonly ConcurrentBag<IDomainEventInterceptor> _interceptors = new ConcurrentBag<IDomainEventInterceptor>();
         private readonly IEventsDispatcher _dispatcher;
         private readonly DomanEventsOptions _options;
 
-        public EventsMediator(IEventsDispatcher dispatcher, IOptions<DomanEventsOptions> options)
+        public EventsMediator(IEventsDispatcher dispatcher, IOptions<DomanEventsOptions> options, IEnumerable<IDomainEventInterceptor> interceptors)
         {
             ArgumentNullException.ThrowIfNull(dispatcher, nameof(dispatcher));
             ArgumentNullException.ThrowIfNull(options, nameof(options));
+            ArgumentNullException.ThrowIfNull(interceptors, nameof(interceptors));
+            
             _dispatcher = dispatcher;
             _options = options.Value ?? new DomanEventsOptions();
+
+            foreach (var interceptor in interceptors)
+            {
+                AddInterceptor(interceptor);
+            }
         }
 
         public async Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent
@@ -34,7 +43,17 @@ namespace DomainEvents
             {
                 var subscriptions = _subscriptions[eventType];
 
+                foreach (var interceptor in _interceptors)
+                {
+                    await interceptor.BeforePublish(@event, cancellationToken);
+                }
+
                 await _dispatcher.Dispatch(@event, subscriptions, cancellationToken);
+
+                foreach (var interceptor in _interceptors)
+                {
+                    await interceptor.AfterPublish(@event, cancellationToken);
+                }
             }
             else if (_options.FailOnNoSubscribers)
             {
@@ -70,6 +89,11 @@ namespace DomainEvents
             }
 
             return false;
+        }
+
+        public void AddInterceptor(IDomainEventInterceptor interceptor)
+        {
+            _interceptors.Add(interceptor);
         }
     }
 }
