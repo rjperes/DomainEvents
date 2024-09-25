@@ -13,8 +13,8 @@ namespace DomainEvents
 
     sealed class EventsMediator : IEventsMediator
     {
-        private readonly IDictionary<Type, LinkedList<Subscription>> _subscriptions = new ConcurrentDictionary<Type, LinkedList<Subscription>>();
-        private readonly ConcurrentBag<IDomainEventInterceptor> _interceptors = new ConcurrentBag<IDomainEventInterceptor>();
+        private readonly ConcurrentDictionary<Type, LinkedList<Subscription>> _subscriptions = new();
+        private readonly ConcurrentBag<IDomainEventInterceptor> _interceptors = [];
         private readonly IEventsDispatcher _dispatcher;
         private readonly DomainEventsOptions _options;
 
@@ -39,10 +39,8 @@ namespace DomainEvents
 
             var eventType = @event.GetType();
 
-            if (_subscriptions.ContainsKey(eventType))
+            if (_subscriptions.TryGetValue(eventType, out var subscriptions))
             {
-                var subscriptions = _subscriptions[eventType];
-
                 foreach (var interceptor in _interceptors)
                 {
                     await interceptor.BeforePublish(@event, cancellationToken);
@@ -67,7 +65,7 @@ namespace DomainEvents
 
             Action<object> act = (evt) => action((T)evt);
             var eventType = typeof(T);
-            var subscription = new Subscription(this, typeof(T), act);
+            var subscription = new Subscription(this, eventType, act);
 
             if (!_subscriptions.TryGetValue(eventType, out var list))
             {
@@ -83,9 +81,9 @@ namespace DomainEvents
         {
             ArgumentNullException.ThrowIfNull(subscription, nameof(subscription));
 
-            if (_subscriptions.ContainsKey(subscription.EventType))
+            if (_subscriptions.TryGetValue(subscription.EventType, out var list))
             {
-                return _subscriptions[subscription.EventType].Remove(subscription);
+                return list.Remove(subscription);
             }
 
             return false;
