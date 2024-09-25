@@ -49,7 +49,7 @@ namespace DomainEventsConsole
                 @event.WaitOne();
                 var count = 0;
 
-                var subscription = subscriber.Subscribe<SampleEvent>(@event =>
+                using var subscription = subscriber.Subscribe<SampleEvent>(@event =>
                 {
                     Console.WriteLine($"Subscribe: {@event.Id}");
                     count++;
@@ -61,8 +61,6 @@ namespace DomainEventsConsole
                 }
 
                 Console.WriteLine($"{count} consumed");
-
-                subscription.Dispose();
             }).Start();
 
             @event.Set();

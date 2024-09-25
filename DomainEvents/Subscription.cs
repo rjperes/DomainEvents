@@ -22,7 +22,7 @@
 
         public void Dispose()
         {
-            _dispatcher.Unregister(this);
+            _dispatcher.Unsubscribe(this);
         }
 
         public override string ToString() => $"{_id}@{EventType}";

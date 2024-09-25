@@ -5,9 +5,9 @@ namespace DomainEvents
 {
     public interface IEventsMediator
     {
-        Task Dispatch<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent;
-        Subscription Register<T>(Action<T> action) where T : IDomainEvent;
-        bool Unregister(Subscription subscription);
+        Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent;
+        Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent;
+        bool Unsubscribe(Subscription subscription);
     }
 
     internal class EventsMediator : IEventsMediator
@@ -24,7 +24,7 @@ namespace DomainEvents
             _options = options.Value ?? new DomanEventsOptions();
         }
 
-        public async Task Dispatch<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public async Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
 
@@ -42,7 +42,7 @@ namespace DomainEvents
             }
         }
 
-        public Subscription Register<T>(Action<T> action) where T : IDomainEvent
+        public Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(action, nameof(action));
 
@@ -60,7 +60,7 @@ namespace DomainEvents
             return subscription;
         }
 
-        public bool Unregister(Subscription subscription)
+        public bool Unsubscribe(Subscription subscription)
         {
             ArgumentNullException.ThrowIfNull(subscription, nameof(subscription));
 

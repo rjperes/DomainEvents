@@ -18,7 +18,7 @@
         public Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(action, nameof(action));
-            return _dispatcher.Register(action);
+            return _dispatcher.Subscribe(action);
         }
     }
 }

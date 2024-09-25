@@ -20,7 +20,7 @@
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
 
-            await _dispatcher.Dispatch<T>(@event, cancellationToken);
+            await _dispatcher.Publish<T>(@event, cancellationToken);
         }
     }
 }
