@@ -42,7 +42,7 @@
                     break;
                 }
 
-                task = task.ContinueWith(_ => subscription.Action(@event));
+                task = task.ContinueWith(_ => subscription.Action(@event), cancellationToken);
             }
 
             await task;
@@ -79,6 +79,11 @@
 
             foreach (var subscription in subscriptions)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 new Thread(() => subscription.Action(@event)).Start();
             }
 

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DomainEventsConsole
 {
-    public class SampleEvent : IDomainEvent
+    public class DummyEvent : IDomainEvent
     {
         public DateTime Timestamp { get; set; } = DateTime.Now;
         public int Id { get; set; }
@@ -28,18 +28,27 @@ namespace DomainEventsConsole
         }
     }
 
+    public class DummySubscription : ISubscription<DummyEvent>
+    {
+        public Task OnEvent(DummyEvent @event)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
     internal class Program
     {
         static async Task Main()
         {
             var services = new ServiceCollection();
-            services.AddDomainEvents(options =>
-            {
-                options.FailOnNoSubscribers = true;
-            });
+            //services.AddDomainEvents(options =>
+            //{
+            //    options.FailOnNoSubscribers = true;
+            //});
+            services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
             services.AddOptions();
 
-            services.AddSingleton<IDomainEventInterceptor, DummyInterceptor>();
+            //services.AddSingleton<IDomainEventInterceptor, DummyInterceptor>();
 
             var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
@@ -60,7 +69,7 @@ namespace DomainEventsConsole
                 for (var i = 0; i < 10; i++)
                 {
                     Console.WriteLine($"Publish: {i}");
-                    await publisher.Publish(new SampleEvent { Id = i });
+                    await publisher.Publish(new DummyEvent { Id = i });
                 }
             }).Start();
 
@@ -69,7 +78,7 @@ namespace DomainEventsConsole
                 @event.WaitOne();
                 var count = 0;
 
-                using var subscription = subscriber.Subscribe<SampleEvent>(@event =>
+                using var subscription = subscriber.Subscribe<DummyEvent>(@event =>
                 {
                     Console.WriteLine($"Subscribe: {@event.Id}");
                     count++;
