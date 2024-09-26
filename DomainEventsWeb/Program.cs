@@ -2,6 +2,24 @@ using DomainEvents;
 
 namespace DomainEventsWeb
 {
+    public class TestInterceptor : DomainEventInterceptor
+    {
+        public TestInterceptor(IServiceProvider serviceProvider)
+        {
+            
+        }
+
+        public override Task AfterPublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        {
+            return base.AfterPublish(@event, cancellationToken);
+        }
+
+        public override Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        {
+            return base.BeforePublish(@event, cancellationToken);
+        }
+    }
+
     public class Program
     {
         public static void Main(string[] args)
@@ -11,7 +29,7 @@ namespace DomainEventsWeb
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
-            builder.Services.AddDomainEvents();
+            builder.Services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
 
             var app = builder.Build();
 

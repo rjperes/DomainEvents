@@ -20,6 +20,13 @@ namespace DomainEventsWeb.Controllers
             _subscription = _subscriber.Subscribe<TestEvent>(evt => OnEvent(evt));
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            _subscription?.Dispose();
+
+            base.Dispose(disposing);
+        }
+
         private void OnEvent(TestEvent evt)
         {
             
@@ -33,13 +40,6 @@ namespace DomainEventsWeb.Controllers
         public async Task<IActionResult> Publish(CancellationToken cancellationToken)
         {
             await _publisher.Publish(new TestEvent(), cancellationToken);
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        public IActionResult Unsubscribe()
-        {
-            _subscription.Dispose();
 
             return RedirectToAction(nameof(Index));
         }
