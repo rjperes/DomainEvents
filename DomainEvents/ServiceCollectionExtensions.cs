@@ -85,29 +85,29 @@ namespace DomainEvents
             ArgumentNullException.ThrowIfNull(services, nameof(services));
             ArgumentNullException.ThrowIfNull(assembly, nameof(assembly));
 
-            foreach (var eventsDispatcherType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsDispatcher).IsAssignableFrom(x)))
-            {
-                services.AddSingleton(typeof(IEventsDispatcher), eventsDispatcherType);
-            }
+            //foreach (var eventsDispatcherType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsDispatcher).IsAssignableFrom(x)))
+            //{
+            //    services.AddSingleton(typeof(IEventsDispatcher), eventsDispatcherType);
+            //}
 
-            foreach (var eventsMediatorType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsMediator).IsAssignableFrom(x)))
-            {
-                services.AddSingleton(typeof(IEventsMediator), eventsMediatorType);
-            }
+            //foreach (var eventsMediatorType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsMediator).IsAssignableFrom(x)))
+            //{
+            //    services.AddSingleton(typeof(IEventsMediator), eventsMediatorType);
+            //}
 
-            foreach (var eventsPublisherType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsPublisher).IsAssignableFrom(x)))
-            {
-                services.AddSingleton(typeof(IEventsPublisher), eventsPublisherType);
-            }
+            //foreach (var eventsPublisherType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsPublisher).IsAssignableFrom(x)))
+            //{
+            //    services.AddSingleton(typeof(IEventsPublisher), eventsPublisherType);
+            //}
 
-            foreach (var domainInterceptorType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IDomainEventInterceptor).IsAssignableFrom(x)))
+            foreach (var domainInterceptorType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && !x.IsGenericTypeDefinition && typeof(IDomainEventInterceptor).IsAssignableFrom(x)))
             {
                 services.AddSingleton(typeof(IDomainEventInterceptor), domainInterceptorType);
             }
 
             var subscriptions = new Dictionary<Type, Type>();
 
-            foreach (var subscriptionType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && x.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ISubscription<>))))
+            foreach (var subscriptionType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && !x.IsGenericTypeDefinition && x.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ISubscription<>))))
             {
                 foreach (var specificSubscriptionType in subscriptionType.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ISubscription<>)))
                 {
@@ -117,10 +117,10 @@ namespace DomainEvents
                 }
             }
 
-            foreach (var eventsSubscriberType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsSubscriber).IsAssignableFrom(x)))
-            {
-                services.AddSingleton(typeof(IEventsSubscriber), sp => RegisterEventSubscriber(sp, eventsSubscriberType, subscriptions));
-            }
+            //foreach (var eventsSubscriberType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && typeof(IEventsSubscriber).IsAssignableFrom(x)))
+            //{
+            //    services.AddSingleton(typeof(IEventsSubscriber), sp => RegisterEventSubscriber(sp, eventsSubscriberType, subscriptions));
+            //}
 
             return AddDomainEvents(services);
         }
