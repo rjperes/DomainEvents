@@ -7,6 +7,6 @@
 /DomainEvents/obj
 /DomainEventsConsole/bin
 /DomainEventsConsole/obj
-/DomainEventsWeb/bin/Debug/net8.0
+/DomainEventsWeb/bin
 /DomainEventsWeb/obj
 /DomainEventsWeb/DomainEventsWeb.csproj.user
