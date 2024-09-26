@@ -132,7 +132,7 @@ namespace DomainEvents
             foreach (var entry in subscriptionEventTypes)
             {
                 var subscriber = serviceProvider.GetService(entry.Key);
-                _subscribe.MakeGenericMethod(entry.Value).Invoke(null, new[] { eventsSubscriber, subscriber });
+                _subscribe.MakeGenericMethod(entry.Value).Invoke(null, [eventsSubscriber, subscriber]);
             }
 
             return eventsSubscriber!;
