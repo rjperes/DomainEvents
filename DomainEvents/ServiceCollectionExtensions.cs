@@ -8,6 +8,14 @@ namespace DomainEvents
     {
         private static readonly MethodInfo _subscribe = typeof(EventsSubscriberExtensions).GetMethod(nameof(EventsSubscriberExtensions.Subscribe))!;
 
+        //private static readonly Dictionary<Type, Type> _defaultServiceImplementations = new()
+        //{
+        //    [typeof(IEventsDispatcher)] = typeof(ThreadEventsDispatcher),
+        //    [typeof(IEventsMediator)] = typeof(EventsMediator),
+        //    [typeof(IEventsSubscriber)] = typeof(EventsSubscriber),
+        //    [typeof(IEventsPublisher)] = typeof(EventsPublisher)
+        //};
+
         public static IServiceCollection AddDomainEvents(this IServiceCollection services, DomainEventsOptions options)
         {
             ArgumentNullException.ThrowIfNull(options, nameof(options));
@@ -32,7 +40,7 @@ namespace DomainEvents
 
             if (!services.Any(x => x.ServiceType == typeof(IEventsDispatcher)))
             {
-                services.AddSingleton<IEventsDispatcher, TaskEventsDispatcher>();
+                services.AddSingleton<IEventsDispatcher, ThreadEventsDispatcher>();
             }
 
             if (!services.Any(x => x.ServiceType == typeof(IEventsMediator)))

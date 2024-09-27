@@ -54,15 +54,15 @@ namespace DomainEventsConsole
 
             var subscriber = serviceProvider.GetRequiredService<IEventsSubscriber>();
             var publisher = serviceProvider.GetRequiredService<IEventsPublisher>();
+            
             //var mediator = serviceProvider.GetRequiredService<IEventsMediator>();
-
             //mediator.AddInterceptor(new DummyInterceptor());
 
             //await publisher.Publish(new XptoEvent());
 
             var @event = new ManualResetEvent(false);
 
-            new Thread(async () =>
+            var publisherThread = new Thread(async () =>
             {
                 @event.WaitOne();
 
@@ -71,9 +71,10 @@ namespace DomainEventsConsole
                     Console.WriteLine($"Publish: {i}");
                     await publisher.Publish(new DummyEvent { Id = i });
                 }
-            }).Start();
+            });
+            publisherThread.Start();
 
-            new Thread(() =>
+            var subscriberThread = new Thread(() =>
             {
                 @event.WaitOne();
                 var count = 0;
@@ -90,11 +91,13 @@ namespace DomainEventsConsole
                 }
 
                 Console.WriteLine($"{count} consumed");
-            }).Start();
+            });
+            subscriberThread.Start();
 
             @event.Set();
 
-            Console.ReadLine();
+            publisherThread.Join();
+            subscriberThread.Join();
         }
     }
 }

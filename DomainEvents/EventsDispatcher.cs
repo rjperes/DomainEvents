@@ -51,22 +51,22 @@
 
     sealed class ParallelEventsDispatcher : IEventsDispatcher
     {
-        public Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public async Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
 
-            foreach (var subscription in subscriptions.AsParallel())
+            await Parallel.ForEachAsync(subscriptions.AsParallel(), cancellationToken, (subscription, ct) =>
             {
-                if (cancellationToken.IsCancellationRequested)
+                if (ct.IsCancellationRequested)
                 {
-                    break;
+                    return ValueTask.CompletedTask;
                 }
 
                 subscription.Action(@event);
-            }
 
-            return Task.CompletedTask;
+                return ValueTask.CompletedTask;
+            });
         }
     }
 
