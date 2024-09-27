@@ -5,6 +5,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>NetDomainEvents</PackageId>
+    <Title>Domain Events for .NET</Title>
+    <Authors>Ricardo Peres</Authors>
+    <Description>Domain Events for .NET</Description>
+    <PackageProjectUrl>https://github.com/rjperes/DomainEvents</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
