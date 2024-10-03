@@ -91,6 +91,8 @@ namespace DomainEvents
 
         public void AddInterceptor(IDomainEventInterceptor interceptor)
         {
+            ArgumentNullException.ThrowIfNull(interceptor, nameof(interceptor));
+
             _interceptors.Add(interceptor);
         }
     }

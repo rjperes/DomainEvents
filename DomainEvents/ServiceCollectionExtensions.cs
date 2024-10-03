@@ -113,14 +113,14 @@ namespace DomainEvents
                 services.AddSingleton(typeof(IDomainEventInterceptor), domainInterceptorType);
             }
 
-            var subscriptions = new Dictionary<Type, Type>();
+            //var subscriptions = new Dictionary<Type, Type>();
 
             foreach (var subscriptionType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && !x.IsGenericTypeDefinition && x.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ISubscription<>))))
             {
                 foreach (var specificSubscriptionType in subscriptionType.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ISubscription<>)))
                 {
                     var eventType = specificSubscriptionType.GetGenericArguments().First();
-                    subscriptions[subscriptionType] = eventType;
+                    //subscriptions[subscriptionType] = eventType;
                     services.AddSingleton(typeof(ISubscription<>).MakeGenericType(eventType), subscriptionType);
                 }
             }
