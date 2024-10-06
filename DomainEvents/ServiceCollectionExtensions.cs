@@ -38,7 +38,7 @@ namespace DomainEvents
 
             if (!services.Any(x => x.ServiceType == typeof(IEventsDispatcher)))
             {
-                services.AddSingleton<IEventsDispatcher, ThreadEventsDispatcher>();
+                services.AddSingleton<IEventsDispatcher, TaskEventsDispatcher>();
             }
 
             if (!services.Any(x => x.ServiceType == typeof(IEventsPublisher)))

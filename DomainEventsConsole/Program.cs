@@ -127,6 +127,7 @@ namespace DomainEventsConsole
             @event.Set();
 
             await publisher.Publish(new DummyEvent());
+            await publisher.Publish(new XptoEvent());
 
             //publisherThread.Join();
             //subscriberThread.Join();
