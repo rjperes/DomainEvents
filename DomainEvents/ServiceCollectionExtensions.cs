@@ -77,6 +77,9 @@ namespace DomainEvents
             return AddDomainEventsFromAssembly(services, assembly);
         }
 
+        private static readonly MethodInfo _subscribe = typeof(EventsSubscriberExtensions).GetMethod(nameof(EventsSubscriberExtensions.Subscribe))!;
+        private static readonly MethodInfo _addInterceptor = typeof(EventsMediatorExtensions).GetMethod(nameof(EventsMediatorExtensions.AddInterceptor))!;
+
         public static IDomainEventsServiceCollection AddDomainEventsFromAssembly(this IServiceCollection services, Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(services, nameof(services));
@@ -84,19 +87,45 @@ namespace DomainEvents
 
             foreach (var domainInterceptorType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && !x.IsGenericTypeDefinition && typeof(IDomainEventInterceptor).IsAssignableFrom(x)))
             {
-                services.AddSingleton(typeof(IDomainEventInterceptor), domainInterceptorType);
+                services.AddSingleton<IDomainEventInterceptor>(sp =>
+                {
+                    var interceptor = ActivatorUtilities.CreateInstance(sp, domainInterceptorType) as IDomainEventInterceptor;
+                    var mediator = sp.GetRequiredService<IEventsMediator>();
+                    mediator.AddInterceptor(interceptor!);
+                    return interceptor!;
+                });
             }
 
             foreach (var subscriptionType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && !x.IsGenericTypeDefinition && x.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ISubscription<>))))
             {
-                var eventType = subscriptionType.GetGenericArguments().First();
-                services.AddSingleton(typeof(ISubscription<>).MakeGenericType(eventType), subscriptionType);
+                foreach (var subscriptionInterfaceType in subscriptionType.GetInterfaces().Where(x => x.GetGenericTypeDefinition() == typeof(ISubscription<>)))
+                {
+                    var eventType = subscriptionInterfaceType.GetGenericArguments().First();
+
+                    services.AddSingleton(typeof(ISubscription<>).MakeGenericType(eventType), sp =>
+                    {
+                        var genericSubscription = ActivatorUtilities.CreateInstance(sp, subscriptionType);
+                        var subscriber = sp.GetRequiredService<IEventsSubscriber>();
+                        _subscribe.MakeGenericMethod(eventType).Invoke(null, new object[] { subscriber, genericSubscription });
+                        return genericSubscription;
+                    });
+                }
             }
 
             foreach (var genericDomainInterceptorType in assembly.GetTypes().Where(x => !x.IsAbstract && !x.IsInterface && !x.IsGenericTypeDefinition && x.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDomainEventInterceptor<>))))
             {
-                var eventType = genericDomainInterceptorType.GetGenericArguments().First();
-                services.AddSingleton(typeof(IDomainEventInterceptor<>).MakeGenericType(eventType), genericDomainInterceptorType);
+                foreach (var interceptionInterfaceType in genericDomainInterceptorType.GetInterfaces().Where(x => x.GetGenericTypeDefinition() == typeof(IDomainEventInterceptor<>)))
+                {
+                    var eventType = interceptionInterfaceType.GetGenericArguments().First();
+
+                    services.AddSingleton(typeof(IDomainEventInterceptor<>).MakeGenericType(eventType), sp =>
+                    {
+                        var genericInterceptor = ActivatorUtilities.CreateInstance(sp, genericDomainInterceptorType);
+                        var mediator = sp.GetRequiredService<IEventsMediator>();
+                        _addInterceptor.MakeGenericMethod(eventType).Invoke(null, new object[] { mediator, genericInterceptor });
+                        return genericInterceptor;
+                    });
+                }
             }
 
             return AddDomainEvents(services);

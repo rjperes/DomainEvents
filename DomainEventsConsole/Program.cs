@@ -71,11 +71,11 @@ namespace DomainEventsConsole
             //{
             //    options.FailOnNoSubscribers = true;
             //});
-            services.AddDomainEvents()
-                .AddInterceptor<DummyInterceptor>()
-                .AddInterceptor<DummyEvent, DummyGenericInterceptor>()
-                .AddSubscription<DummyEvent, DummySubscription>();
-            //services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
+            //services.AddDomainEvents()
+            //    .AddInterceptor<DummyInterceptor>()
+            //    .AddInterceptor<DummyEvent, DummyGenericInterceptor>()
+            //    .AddSubscription<DummyEvent, DummySubscription>();
+            services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
             services.AddOptions();
 
             //services.AddSingleton<IDomainEventInterceptor, DummyInterceptor>();
