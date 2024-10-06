@@ -10,3 +10,4 @@
 /DomainEventsWeb/bin
 /DomainEventsWeb/obj
 /DomainEventsWeb/DomainEventsWeb.csproj.user
+/publish_nuget.bat
