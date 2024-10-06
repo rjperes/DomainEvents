@@ -1,11 +1,13 @@
-﻿namespace DomainEvents
+﻿using System.Threading;
+
+namespace DomainEvents
 {
     internal interface IEventsDispatcher
     {
         Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent;
     }
 
-    sealed class SequentialEventsDispatcher : IEventsDispatcher
+    public sealed class SequentialEventsDispatcher : IEventsDispatcher
     {
         public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
@@ -26,7 +28,7 @@
         }
     }
 
-    sealed class TaskEventsDispatcher : IEventsDispatcher
+    public sealed class TaskEventsDispatcher : IEventsDispatcher
     {
         public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
@@ -49,7 +51,7 @@
         }
     }
 
-    sealed class ParallelEventsDispatcher : IEventsDispatcher
+    public sealed class ParallelEventsDispatcher : IEventsDispatcher
     {
         public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
@@ -70,7 +72,7 @@
         }
     }
 
-    sealed class ThreadEventsDispatcher : IEventsDispatcher
+    public sealed class ThreadEventsDispatcher : IEventsDispatcher
     {
         public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
@@ -84,7 +86,38 @@
                     break;
                 }
 
-                new Thread(() => subscription.Action(@event)).Start();
+                new Thread((ct) =>
+                {
+                    if (((CancellationToken)ct!).IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    subscription.Action(@event);
+                }).Start(cancellationToken);
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    public sealed class ThreadPoolEventsDispatcher : IEventsDispatcher
+    {
+        public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
+        {
+            ArgumentNullException.ThrowIfNull(@event, nameof(@event));
+            ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
+
+            foreach (var subscription in subscriptions)
+            {          
+                ThreadPool.QueueUserWorkItem((ct) =>
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    subscription.Action(@event);
+                }, cancellationToken);
             }
 
             return Task.CompletedTask;
