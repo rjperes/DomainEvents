@@ -1,7 +1,7 @@
 ﻿namespace DomainEvents
 {
-    public interface ISubscription<T> where T : IDomainEvent
+    public interface ISubscription<TEvent> where TEvent : IDomainEvent
     {
-        Task OnEvent(T @event);
+        Task OnEvent(TEvent @event, Subscription subscription);
     }
 }

@@ -2,11 +2,13 @@
 {
     public static class EventsSubscriberExtensions
     {
-        public static Subscription Subscribe<T>(this IEventsSubscriber subscriber, ISubscription<T> subscription) where T : IDomainEvent
+        public static Subscription Subscribe<TEvent>(this IEventsSubscriber subscriber, ISubscription<TEvent> subscription) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(subscriber, nameof(subscriber));
             ArgumentNullException.ThrowIfNull(subscription, nameof(subscription));
-            return subscriber.Subscribe<T>(async (evt) => await subscription.OnEvent(evt));
+            Subscription sub = null;
+            sub = subscriber.Subscribe<TEvent>(async (evt) => await subscription.OnEvent(evt, sub));
+            return sub;
         }
     }
 }

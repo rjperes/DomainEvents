@@ -2,7 +2,7 @@
 {
     public interface IEventsPublisher
     {
-        Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent;
+        Task Publish<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : IDomainEvent;
     }
 
     sealed class EventsPublisher : IEventsPublisher
@@ -16,7 +16,7 @@
             _dispatcher = dispatcher;
         }
 
-        public async Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public async Task Publish<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
 

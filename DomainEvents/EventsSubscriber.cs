@@ -2,7 +2,7 @@
 {
     public interface IEventsSubscriber
     {
-        Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent;
+        Subscription Subscribe<TEvent>(Action<TEvent> action) where TEvent : IDomainEvent;
     }
 
     sealed class EventsSubscriber : IEventsSubscriber
@@ -15,7 +15,7 @@
             _dispatcher = dispatcher;
         }
 
-        public Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent
+        public Subscription Subscribe<TEvent>(Action<TEvent> action) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(action, nameof(action));
             return _dispatcher.Subscribe(action);

@@ -2,12 +2,12 @@
 {
     internal interface IEventsDispatcher
     {
-        Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent;
+        Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent;
     }
 
     sealed class SequentialEventsDispatcher : IEventsDispatcher
     {
-        public Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
@@ -28,7 +28,7 @@
 
     sealed class TaskEventsDispatcher : IEventsDispatcher
     {
-        public async Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
@@ -51,7 +51,7 @@
 
     sealed class ParallelEventsDispatcher : IEventsDispatcher
     {
-        public async Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
@@ -72,7 +72,7 @@
 
     sealed class ThreadEventsDispatcher : IEventsDispatcher
     {
-        public Task Dispatch<T>(T @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));

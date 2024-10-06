@@ -1,12 +1,13 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 
 namespace DomainEvents
 {
     public interface IEventsMediator
     {
-        Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent;
-        Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent;
+        Task Publish<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : IDomainEvent;
+        Subscription Subscribe<TEvent>(Action<TEvent> action) where TEvent : IDomainEvent;
         bool Unsubscribe(Subscription subscription);
         void AddInterceptor(IDomainEventInterceptor interceptor);
     }
@@ -17,27 +18,28 @@ namespace DomainEvents
         private readonly ConcurrentBag<IDomainEventInterceptor> _interceptors = [];
         private readonly IEventsDispatcher _dispatcher;
         private readonly DomainEventsOptions _options;
+        private readonly IServiceProvider _serviceProvider;
 
-        public EventsMediator(IEventsDispatcher dispatcher, IOptions<DomainEventsOptions> options, IEnumerable<IDomainEventInterceptor> interceptors)
+        public EventsMediator(IServiceProvider serviceProvider, IEventsDispatcher dispatcher, IOptions<DomainEventsOptions> options)
         {
+            ArgumentNullException.ThrowIfNull(serviceProvider, nameof(serviceProvider));
             ArgumentNullException.ThrowIfNull(dispatcher, nameof(dispatcher));
             ArgumentNullException.ThrowIfNull(options, nameof(options));
-            ArgumentNullException.ThrowIfNull(interceptors, nameof(interceptors));
 
+            _serviceProvider = serviceProvider;
             _dispatcher = dispatcher;
             _options = options.Value ?? new DomainEventsOptions();
-
-            foreach (var interceptor in interceptors)
-            {
-                AddInterceptor(interceptor);
-            }
         }
 
-        public async Task Publish<T>(T @event, CancellationToken cancellationToken = default) where T : IDomainEvent
+        public async Task Publish<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
 
             var eventType = @event.GetType();
+
+            var genericSubscriptions = _serviceProvider.GetServices<ISubscription<TEvent>>().ToList();
+            var genericInterceptors = _serviceProvider.GetServices<IDomainEventInterceptor<TEvent>>().ToList();
+            var interceptors = _serviceProvider.GetServices<IDomainEventInterceptor>().ToList();
 
             if (_subscriptions.TryGetValue(eventType, out var subscriptions))
             {
@@ -59,12 +61,12 @@ namespace DomainEvents
             }
         }
 
-        public Subscription Subscribe<T>(Action<T> action) where T : IDomainEvent
+        public Subscription Subscribe<TEvent>(Action<TEvent> action) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(action, nameof(action));
 
-            Action<object> act = (evt) => action((T)evt);
-            var eventType = typeof(T);
+            Action<object> act = (evt) => action((TEvent)evt);
+            var eventType = typeof(TEvent);
             var subscription = new Subscription(this, eventType, act);
 
             if (!_subscriptions.TryGetValue(eventType, out var list))

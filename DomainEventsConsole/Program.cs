@@ -13,15 +13,41 @@ namespace DomainEventsConsole
     {
     }
 
+    public class XptoInterceptor : DomainEventInterceptor<XptoEvent>
+    {
+        public override Task AfterPublish(XptoEvent @event, CancellationToken cancellationToken = default)
+        {
+            return base.AfterPublish(@event, cancellationToken);
+        }
+
+        public override Task BeforePublish(XptoEvent @event, CancellationToken cancellationToken = default)
+        {
+            return base.BeforePublish(@event, cancellationToken);
+        }
+    }
+
     public class DummyInterceptor : DomainEventInterceptor
     {
         public override Task AfterPublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        {
+            return base.AfterPublish(@event, cancellationToken);
+        }
+
+        public override Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        {
+            return base.BeforePublish(@event, cancellationToken);
+        }
+    }
+
+    public class DummyGenericInterceptor : DomainEventInterceptor<DummyEvent>
+    {
+        public override Task AfterPublish(DummyEvent @event, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"AfterPublish {@event}");
             return base.AfterPublish(@event, cancellationToken);
         }
 
-        public override Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        public override Task BeforePublish(DummyEvent @event, CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"BeforePublish {@event}");
             return base.BeforePublish(@event, cancellationToken);
@@ -30,7 +56,7 @@ namespace DomainEventsConsole
 
     public class DummySubscription : ISubscription<DummyEvent>
     {
-        public Task OnEvent(DummyEvent @event)
+        public Task OnEvent(DummyEvent @event, Subscription subscription)
         {
             return Task.CompletedTask;
         }
@@ -45,7 +71,11 @@ namespace DomainEventsConsole
             //{
             //    options.FailOnNoSubscribers = true;
             //});
-            services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
+            services.AddDomainEvents()
+                .AddInterceptor<DummyInterceptor>()
+                .AddInterceptor<DummyEvent, DummyGenericInterceptor>()
+                .AddSubscription<DummyEvent, DummySubscription>();
+            //services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
             services.AddOptions();
 
             //services.AddSingleton<IDomainEventInterceptor, DummyInterceptor>();
@@ -62,42 +92,46 @@ namespace DomainEventsConsole
 
             var @event = new ManualResetEvent(false);
 
-            var publisherThread = new Thread(async () =>
-            {
-                @event.WaitOne();
+            //var publisherThread = new Thread(async () =>
+            //{
+            //    @event.WaitOne();
 
-                for (var i = 0; i < 10; i++)
-                {
-                    Console.WriteLine($"Publish: {i}");
-                    await publisher.Publish(new DummyEvent { Id = i });
-                }
-            });
-            publisherThread.Start();
+            //    for (var i = 0; i < 10; i++)
+            //    {
+            //        Console.WriteLine($"Publish: {i}");
+            //        await publisher.Publish(new DummyEvent { Id = i });
+            //    }
+            //});
+            //publisherThread.Start();
 
-            var subscriberThread = new Thread(() =>
-            {
-                @event.WaitOne();
-                var count = 0;
+            //var subscriberThread = new Thread(() =>
+            //{
+            //    @event.WaitOne();
+            //    var count = 0;
 
-                using var subscription = subscriber.Subscribe<DummyEvent>(@event =>
-                {
-                    Console.WriteLine($"Subscribe: {@event.Id}");
-                    count++;
-                });
+            //    using var subscription = subscriber.Subscribe<DummyEvent>(@event =>
+            //    {
+            //        Console.WriteLine($"Subscribe: {@event.Id}");
+            //        count++;
+            //    });
 
-                while (count < 10)
-                {
-                    Thread.Sleep(100);
-                }
+            //    while (count < 10)
+            //    {
+            //        Thread.Sleep(100);
+            //    }
 
-                Console.WriteLine($"{count} consumed");
-            });
-            subscriberThread.Start();
+            //    Console.WriteLine($"{count} consumed");
+            //});
+            //subscriberThread.Start();
 
             @event.Set();
 
-            publisherThread.Join();
-            subscriberThread.Join();
+            await publisher.Publish(new DummyEvent());
+
+            //publisherThread.Join();
+            //subscriberThread.Join();
+
+            Console.ReadLine();
         }
     }
 }
