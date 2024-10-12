@@ -10,9 +10,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9527EC8A-8371-44AF-A1DD-2ECB42B3FFF4}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainEventsWeb", "DomainEventsWeb\DomainEventsWeb.csproj", "{E110DBE1-EC0B-497D-B327-C35F43222A16}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainEventsWeb", "DomainEventsWeb\DomainEventsWeb.csproj", "{E110DBE1-EC0B-497D-B327-C35F43222A16}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
