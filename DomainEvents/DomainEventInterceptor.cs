@@ -2,7 +2,7 @@
 {
     public interface IDomainEventInterceptor
     {
-        Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default);
+        ValueTask<bool> BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default);
         Task AfterPublish(IDomainEvent @event, CancellationToken cancellationToken = default);
     }
 
@@ -10,12 +10,12 @@
     {
         public virtual Task AfterPublish(IDomainEvent @event, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public virtual Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public virtual ValueTask<bool> BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default) => ValueTask.FromResult(true);
     }
 
     public interface IDomainEventInterceptor<TEvent> where TEvent : IDomainEvent
     {
-        Task BeforePublish(TEvent @event, CancellationToken cancellationToken = default);
+        ValueTask<bool> BeforePublish(TEvent @event, CancellationToken cancellationToken = default);
         Task AfterPublish(TEvent @event, CancellationToken cancellationToken = default);
     }
 
@@ -23,6 +23,6 @@
     {
         public virtual Task AfterPublish(TEvent @event, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public virtual Task BeforePublish(TEvent @event, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public virtual ValueTask<bool> BeforePublish(TEvent @event, CancellationToken cancellationToken = default) => ValueTask.FromResult(true);
     }
 }

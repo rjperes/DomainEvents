@@ -13,18 +13,20 @@
 
             public async override Task AfterPublish(IDomainEvent @event, CancellationToken cancellationToken = default)
             {
-                if (@event is TEvent)
+                if (@event is TEvent specificEvent)
                 {
-                    await _interceptor.AfterPublish((TEvent)@event, cancellationToken);
+                    await _interceptor.AfterPublish(specificEvent, cancellationToken);
                 }
             }
 
-            public async override Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+            public async override ValueTask<bool> BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
             {
-                if (@event is TEvent)
+                if (@event is TEvent specificEvent)
                 {
-                    await _interceptor.BeforePublish((TEvent)@event, cancellationToken);
+                    return await _interceptor.BeforePublish(specificEvent, cancellationToken);
                 }
+
+                return true;
             }
         }
 
@@ -34,7 +36,8 @@
             ArgumentNullException.ThrowIfNull(interceptor, nameof(interceptor));
 
             mediator.AddInterceptor(new SpecificEventDomainEventsInterceptor<TEvent>(interceptor));
+            
             return mediator;
-        }
+        }        
     }
 }

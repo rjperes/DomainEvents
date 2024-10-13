@@ -7,18 +7,18 @@
 
     sealed class EventsSubscriber : IEventsSubscriber
     {
-        private readonly IEventsMediator _dispatcher;
+        private readonly IEventsMediator _mediator;
 
-        public EventsSubscriber(IEventsMediator dispatcher)
+        public EventsSubscriber(IEventsMediator mediator)
         {
-            ArgumentNullException.ThrowIfNull(dispatcher, nameof(dispatcher));
-            _dispatcher = dispatcher;
+            ArgumentNullException.ThrowIfNull(mediator, nameof(mediator));
+            _mediator = mediator;
         }
 
         public Subscription Subscribe<TEvent>(Action<TEvent> action) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(action, nameof(action));
-            return _dispatcher.Subscribe(action);
+            return _mediator.Subscribe(action);
         }
     }
 }

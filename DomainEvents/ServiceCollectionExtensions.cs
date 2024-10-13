@@ -106,7 +106,7 @@ namespace DomainEvents
                     {
                         var genericSubscription = ActivatorUtilities.CreateInstance(sp, subscriptionType);
                         var subscriber = sp.GetRequiredService<IEventsSubscriber>();
-                        _subscribe.MakeGenericMethod(eventType).Invoke(null, new object[] { subscriber, genericSubscription });
+                        _subscribe.MakeGenericMethod(eventType).Invoke(null, [subscriber, genericSubscription]);
                         return genericSubscription;
                     });
                 }
@@ -122,7 +122,7 @@ namespace DomainEvents
                     {
                         var genericInterceptor = ActivatorUtilities.CreateInstance(sp, genericDomainInterceptorType);
                         var mediator = sp.GetRequiredService<IEventsMediator>();
-                        _addInterceptor.MakeGenericMethod(eventType).Invoke(null, new object[] { mediator, genericInterceptor });
+                        _addInterceptor.MakeGenericMethod(eventType).Invoke(null, [mediator, genericInterceptor]);
                         return genericInterceptor;
                     });
                 }

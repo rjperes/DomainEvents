@@ -6,8 +6,8 @@
         {
             ArgumentNullException.ThrowIfNull(subscriber, nameof(subscriber));
             ArgumentNullException.ThrowIfNull(subscription, nameof(subscription));
-            Subscription sub = null;
-            sub = subscriber.Subscribe<TEvent>(async (evt) => await subscription.OnEvent(evt, sub));
+            Subscription? sub = null;
+            sub = subscriber.Subscribe<TEvent>(async (evt) => await subscription.OnEvent(evt, sub!));
             return sub;
         }
     }

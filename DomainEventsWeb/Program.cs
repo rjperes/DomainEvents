@@ -14,7 +14,7 @@ namespace DomainEventsWeb
             return base.AfterPublish(@event, cancellationToken);
         }
 
-        public override Task BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
+        public override ValueTask<bool> BeforePublish(IDomainEvent @event, CancellationToken cancellationToken = default)
         {
             return base.BeforePublish(@event, cancellationToken);
         }

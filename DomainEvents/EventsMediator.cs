@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+using System.Reflection.Metadata.Ecma335;
 
 namespace DomainEvents
 {
@@ -10,12 +11,14 @@ namespace DomainEvents
         Subscription Subscribe<TEvent>(Action<TEvent> action) where TEvent : IDomainEvent;
         bool Unsubscribe(Subscription subscription);
         void AddInterceptor(IDomainEventInterceptor interceptor);
+        void AddTransformer<TSourceEvent, TTargetEvent>(Func<TSourceEvent, TTargetEvent> transformer) where TSourceEvent : IDomainEvent where TTargetEvent : IDomainEvent;
     }
 
     sealed class EventsMediator : IEventsMediator
     {
         private readonly ConcurrentDictionary<Type, LinkedList<Subscription>> _subscriptions = new();
-        private readonly ConcurrentBag<IDomainEventInterceptor> _interceptors = [];
+        private readonly ConcurrentStack<IDomainEventInterceptor> _interceptors = [];
+        private readonly ConcurrentDictionary<Type, Func<object, object>> _transformers = [];
         private readonly IEventsDispatcher _dispatcher;
         private readonly DomainEventsOptions _options;
         private readonly IServiceProvider _serviceProvider;
@@ -36,28 +39,41 @@ namespace DomainEvents
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
 
             var eventType = @event.GetType();
+            IDomainEvent concreteEvent = @event;
 
-            var genericSubscriptions = _serviceProvider.GetServices<ISubscription<TEvent>>().ToList();
-            var genericInterceptors = _serviceProvider.GetServices<IDomainEventInterceptor<TEvent>>().ToList();
-            var interceptors = _serviceProvider.GetServices<IDomainEventInterceptor>().ToList();
+            _serviceProvider.GetServices<ISubscription<TEvent>>();
+            _serviceProvider.GetServices<IDomainEventInterceptor<TEvent>>();
+            _serviceProvider.GetServices<IDomainEventInterceptor>();
+
+            var interceptors = _interceptors.Reverse();
+
+            foreach (var interceptor in interceptors)
+            {
+                var shouldProceed = await interceptor.BeforePublish(@event, cancellationToken);
+                if (!shouldProceed)
+                {
+                    return;
+                }
+            }            
+
+            if (_transformers.TryGetValue(eventType, out var transformer))
+            {
+                concreteEvent = (IDomainEvent) transformer(@event);
+                eventType = concreteEvent.GetType();
+            }
 
             if (_subscriptions.TryGetValue(eventType, out var subscriptions))
-            {
-                foreach (var interceptor in _interceptors)
-                {
-                    await interceptor.BeforePublish(@event, cancellationToken);
-                }
-
-                await _dispatcher.Dispatch(@event, subscriptions, cancellationToken);
-
-                foreach (var interceptor in _interceptors)
-                {
-                    await interceptor.AfterPublish(@event, cancellationToken);
-                }
+            {               
+                await _dispatcher.Dispatch(concreteEvent, subscriptions, cancellationToken);                
             }
             else if (_options.FailOnNoSubscribers)
             {
                 throw new InvalidOperationException($"No subscribers registered for '{eventType}'.");
+            }
+
+            foreach (var interceptor in interceptors)
+            {
+                await interceptor.AfterPublish(@event, cancellationToken);
             }
         }
 
@@ -94,8 +110,13 @@ namespace DomainEvents
         public void AddInterceptor(IDomainEventInterceptor interceptor)
         {
             ArgumentNullException.ThrowIfNull(interceptor, nameof(interceptor));
+            _interceptors.Push(interceptor);
+        }
 
-            _interceptors.Add(interceptor);
+        public void AddTransformer<TSourceEvent, TTargetEvent>(Func<TSourceEvent, TTargetEvent> transformer) where TSourceEvent : IDomainEvent where TTargetEvent : IDomainEvent
+        {
+            ArgumentNullException.ThrowIfNull(transformer, nameof(transformer));
+            _transformers[typeof(TSourceEvent)] = (source) => transformer((TSourceEvent)source);
         }
     }
 }
