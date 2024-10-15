@@ -1,10 +1,47 @@
-﻿using System.Threading;
-
-namespace DomainEvents
+﻿namespace DomainEvents
 {
-    internal interface IEventsDispatcher
+    public interface IEventsDispatcher
     {
         Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent;
+    }
+
+    public sealed class RetriesEventsDispatcher : IEventsDispatcher
+    {
+        private readonly IEventsDispatcher _dispatcher;
+        private readonly TimeSpan _delay;
+        private readonly uint _retries;
+
+        public RetriesEventsDispatcher(IEventsDispatcher dispatcher, TimeSpan delay, uint retries)
+        {
+            ArgumentNullException.ThrowIfNull(dispatcher, nameof(dispatcher));
+            ArgumentOutOfRangeException.ThrowIfEqual<uint>(retries, 0, nameof(retries));
+
+            _dispatcher = dispatcher;
+            _delay = delay;
+            _retries = retries;
+        }
+
+        public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
+        {
+            var i = 0;
+
+            while (i < _retries)
+            {
+                try
+                {
+                    await _dispatcher.Dispatch(@event, subscriptions, cancellationToken);
+                    break;
+                }
+                catch
+                {
+                    if (++i == _retries)
+                    {
+                        throw;
+                    }
+                    Thread.Sleep(_delay);
+                }
+            }
+        }
     }
 
     public sealed class SequentialEventsDispatcher : IEventsDispatcher
