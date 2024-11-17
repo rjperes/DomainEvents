@@ -94,7 +94,7 @@ namespace DomainEventsConsole
             //    .AddInterceptor<DummyInterceptor>()
             //    .AddInterceptor<DummyEvent, DummyGenericInterceptor>()
             //    .AddSubscription<DummyEvent, DummySubscription>();
-            services.AddDomainEventsFromAssembly(typeof(Program).Assembly);
+            services.AddDomainEventsFromAssembly(typeof(Program).Assembly).WithRetries(3, TimeSpan.FromSeconds(3));
             services.AddOptions();
 
             //services.AddSingleton<IDomainEventInterceptor, DummyInterceptor>();

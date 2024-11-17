@@ -5,48 +5,17 @@
         Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent;
     }
 
-    public sealed class RetriesEventsDispatcher : IEventsDispatcher
+    public sealed class SequentialEventsDispatcher : IEventsDispatcher
     {
-        private readonly IEventsDispatcher _dispatcher;
-        private readonly TimeSpan _delay;
-        private readonly uint _retries;
+        private readonly IEventsDispatcherExecutor _dispatcherExecutor;
 
-        public RetriesEventsDispatcher(IEventsDispatcher dispatcher, TimeSpan delay, uint retries)
+        public SequentialEventsDispatcher(IEventsDispatcherExecutor dispatcherExecutor)
         {
-            ArgumentNullException.ThrowIfNull(dispatcher, nameof(dispatcher));
-            ArgumentOutOfRangeException.ThrowIfEqual<uint>(retries, 0, nameof(retries));
-
-            _dispatcher = dispatcher;
-            _delay = delay;
-            _retries = retries;
+            ArgumentNullException.ThrowIfNull(dispatcherExecutor, nameof(dispatcherExecutor));
+            _dispatcherExecutor = dispatcherExecutor;
         }
 
         public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
-        {
-            var i = 0;
-
-            while (i < _retries)
-            {
-                try
-                {
-                    await _dispatcher.Dispatch(@event, subscriptions, cancellationToken);
-                    break;
-                }
-                catch
-                {
-                    if (++i == _retries)
-                    {
-                        throw;
-                    }
-                    Thread.Sleep(_delay);
-                }
-            }
-        }
-    }
-
-    public sealed class SequentialEventsDispatcher : IEventsDispatcher
-    {
-        public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
@@ -58,15 +27,21 @@
                     break;
                 }
 
-                subscription.Action(@event);
+                await _dispatcherExecutor.Dispatch(@event, subscription, cancellationToken);
             }
-
-            return Task.CompletedTask;
         }
     }
 
     public sealed class TaskEventsDispatcher : IEventsDispatcher
     {
+        private readonly IEventsDispatcherExecutor _dispatcherExecutor;
+
+        public TaskEventsDispatcher(IEventsDispatcherExecutor dispatcherExecutor)
+        {
+            ArgumentNullException.ThrowIfNull(dispatcherExecutor, nameof(dispatcherExecutor));
+            _dispatcherExecutor = dispatcherExecutor;
+        }
+
         public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
@@ -81,7 +56,7 @@
                     break;
                 }
 
-                task = task.ContinueWith(_ => subscription.Action(@event), cancellationToken);
+                task = task.ContinueWith(async _ => await _dispatcherExecutor.Dispatch(@event, subscription, cancellationToken), cancellationToken);
             }
 
             await task;
@@ -90,27 +65,41 @@
 
     public sealed class ParallelEventsDispatcher : IEventsDispatcher
     {
+        private readonly IEventsDispatcherExecutor _dispatcherExecutor;
+
+        public ParallelEventsDispatcher(IEventsDispatcherExecutor dispatcherExecutor)
+        {
+            ArgumentNullException.ThrowIfNull(dispatcherExecutor, nameof(dispatcherExecutor));
+            _dispatcherExecutor = dispatcherExecutor;
+        }
+
         public async Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
             ArgumentNullException.ThrowIfNull(subscriptions, nameof(subscriptions));
 
-            await Parallel.ForEachAsync(subscriptions.AsParallel(), cancellationToken, (subscription, ct) =>
+            await Parallel.ForEachAsync(subscriptions.AsParallel(), cancellationToken, async (subscription, ct) =>
             {
                 if (ct.IsCancellationRequested)
                 {
-                    return ValueTask.CompletedTask;
+                    return;
                 }
 
-                subscription.Action(@event);
-
-                return ValueTask.CompletedTask;
+                await _dispatcherExecutor.Dispatch(@event, subscription, ct);
             });
         }
     }
 
     public sealed class ThreadEventsDispatcher : IEventsDispatcher
     {
+        private readonly IEventsDispatcherExecutor _dispatcherExecutor;
+
+        public ThreadEventsDispatcher(IEventsDispatcherExecutor dispatcherExecutor)
+        {
+            ArgumentNullException.ThrowIfNull(dispatcherExecutor, nameof(dispatcherExecutor));
+            _dispatcherExecutor = dispatcherExecutor;
+        }
+
         public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
@@ -123,13 +112,13 @@
                     break;
                 }
 
-                new Thread((ct) =>
+                new Thread(async (ct) =>
                 {
                     if (((CancellationToken)ct!).IsCancellationRequested)
                     {
                         return;
                     }
-                    subscription.Action(@event);
+                    await _dispatcherExecutor.Dispatch(@event, subscription, cancellationToken);
                 }).Start(cancellationToken);
             }
 
@@ -139,6 +128,14 @@
 
     public sealed class ThreadPoolEventsDispatcher : IEventsDispatcher
     {
+        private readonly IEventsDispatcherExecutor _dispatcherExecutor;
+
+        public ThreadPoolEventsDispatcher(IEventsDispatcherExecutor dispatcherExecutor)
+        {
+            ArgumentNullException.ThrowIfNull(dispatcherExecutor, nameof(dispatcherExecutor));
+            _dispatcherExecutor = dispatcherExecutor;
+        }
+
         public Task Dispatch<TEvent>(TEvent @event, IEnumerable<Subscription> subscriptions, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             ArgumentNullException.ThrowIfNull(@event, nameof(@event));
@@ -146,14 +143,15 @@
 
             foreach (var subscription in subscriptions)
             {          
-                ThreadPool.QueueUserWorkItem((ct) =>
+                ThreadPool.QueueUserWorkItem(async (ct) =>
                 {
-                    if (cancellationToken.IsCancellationRequested)
+                    var innerCancellationToken = (CancellationToken) ct!;
+                    if (innerCancellationToken.IsCancellationRequested)
                     {
                         return;
                     }
 
-                    subscription.Action(@event);
+                    await _dispatcherExecutor.Dispatch(@event, subscription, innerCancellationToken);
                 }, cancellationToken);
             }
 

@@ -56,6 +56,11 @@ namespace DomainEvents
                 services.AddSingleton<IEventsSubscriber, EventsSubscriber>();
             }
 
+            if (!services.Any(x => x.ServiceType == typeof(IEventsDispatcherExecutor)))
+            {
+                services.AddSingleton<IEventsDispatcherExecutor, SimpleEventsDispatcherExecutor>();
+            }
+
             return new DomainEventsServiceCollection(services);
         }
 
