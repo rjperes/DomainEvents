@@ -1,4 +1,6 @@
-﻿namespace DomainEvents
+﻿using System.Threading.Channels;
+
+namespace DomainEvents
 {
     public interface IEventsDispatcher
     {

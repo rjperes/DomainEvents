@@ -14,13 +14,24 @@
         }
     }
 
-    public sealed class RetriesEventDispatcherExecutor(uint Retries, TimeSpan Delay) : IEventsDispatcherExecutor
+    public sealed class RetriesEventDispatcherExecutor : IEventsDispatcherExecutor
     {
+        private readonly IEventsDispatcherExecutor _eventsDispatcher;
+        private readonly uint _retries;
+        private readonly TimeSpan _delay;
+
+        public RetriesEventDispatcherExecutor(uint retries, TimeSpan delay, IEventsDispatcherExecutor? eventsDispatcher)
+        {
+            _retries = retries;
+            _delay = delay;
+            _eventsDispatcher = eventsDispatcher ?? new SimpleEventsDispatcherExecutor();
+        }
+
         public async Task Dispatch<TEvent>(TEvent @event, Subscription subscription, CancellationToken cancellationToken = default) where TEvent : IDomainEvent
         {
             var i = 0;
 
-            while (i < Retries)
+            while (i < _retries)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -29,16 +40,16 @@
 
                 try
                 {
-                    subscription.Action(@event);
+                    await _eventsDispatcher.Dispatch(@event, subscription, cancellationToken);
                     break;
                 }
                 catch
                 {
-                    if (++i == Retries)
+                    if (++i == _retries)
                     {
                         throw;
                     }
-                    await Task.Delay(Delay);
+                    await Task.Delay(_delay);
                 }
             }
         }
