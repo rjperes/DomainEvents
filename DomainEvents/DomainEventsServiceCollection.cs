@@ -8,6 +8,9 @@ namespace DomainEvents
         IDomainEventsServiceCollection AddInterceptor<TInterceptor>() where TInterceptor : class, IDomainEventInterceptor;
         IDomainEventsServiceCollection AddInterceptor<TEvent, TInterceptor>() where TEvent : IDomainEvent where TInterceptor : class, IDomainEventInterceptor<TEvent>;
         IDomainEventsServiceCollection AddSubscription<TEvent, TSubscription>() where TEvent : IDomainEvent where TSubscription : class, ISubscription<TEvent>;
+        IDomainEventsServiceCollection AddInterceptor(IDomainEventInterceptor interceptor);
+        IDomainEventsServiceCollection AddInterceptor<TEvent>(IDomainEventInterceptor<TEvent> interceptor) where TEvent : IDomainEvent;
+        IDomainEventsServiceCollection AddSubscription<TEvent>(ISubscription<TEvent> subscription) where TEvent : IDomainEvent;
     }
 
     sealed class DomainEventsServiceCollection : IDomainEventsServiceCollection
@@ -59,6 +62,18 @@ namespace DomainEvents
             return this;
         }
 
+        public IDomainEventsServiceCollection AddInterceptor(IDomainEventInterceptor interceptor)
+        {
+            ArgumentNullException.ThrowIfNull(interceptor, nameof(interceptor));
+            _services.AddSingleton<IDomainEventInterceptor>(sp =>
+            {
+                var mediator = sp.GetRequiredService<IEventsMediator>();
+                mediator.AddInterceptor(interceptor);
+                return interceptor;
+            });
+            return this;
+        }
+
         public IDomainEventsServiceCollection AddInterceptor<TEvent, TInterceptor>() where TEvent : IDomainEvent where TInterceptor : class, IDomainEventInterceptor<TEvent>
         {
             _services.AddSingleton<IDomainEventInterceptor<TEvent>>(sp =>
@@ -68,6 +83,18 @@ namespace DomainEvents
                 mediator.AddInterceptor(interceptor);
                 return interceptor;
 
+            });
+            return this;
+        }
+
+        public IDomainEventsServiceCollection AddInterceptor<TEvent>(IDomainEventInterceptor<TEvent> interceptor) where TEvent : IDomainEvent
+        {
+            ArgumentNullException.ThrowIfNull(interceptor, nameof(interceptor));
+            _services.AddSingleton<IDomainEventInterceptor<TEvent>>(sp =>
+            {
+                var mediator = sp.GetRequiredService<IEventsMediator>();
+                mediator.AddInterceptor(interceptor);
+                return interceptor;
             });
             return this;
         }
@@ -83,5 +110,19 @@ namespace DomainEvents
             });
             return this;
         }
+
+        public IDomainEventsServiceCollection AddSubscription<TEvent>(ISubscription<TEvent> subscription) where TEvent : IDomainEvent
+        {
+            ArgumentNullException.ThrowIfNull(subscription, nameof(subscription));
+            _services.AddSingleton<ISubscription<TEvent>>(sp =>
+            {
+                var subscriber = sp.GetRequiredService<IEventsSubscriber>();
+                var sub = subscriber.Subscribe(subscription);
+                return subscription;
+            });
+            return this;
+
+        }
+
     }
 }
